@@ -9,7 +9,8 @@
  *
  */
  
-#pragma once
+#ifndef _CUTIL_INLINE_H_
+#define _CUTIL_INLINE_H_
 
 #include <cuda.h>
 #include <pcl/cuda/cutil.h>
@@ -28,3 +29,6 @@ inline void print_NVCC_min_spec(const char *sSDKsample, const char *sNVCCReq, co
 }
 
 #define ALIGN_OFFSET(offset, alignment) offset = (offset + (alignment-1)) & ~((alignment-1))
+
+
+#endif // _CUTIL_INLINE_H_

@@ -376,6 +376,7 @@ namespace pcl
                                                              thrust::raw_pointer_cast (&(*indices_)[0]),
                                                              input_->width, input_->height,
                                                              indices_->size (), std::numeric_limits<float>::quiet_NaN ()));
+      //std::cout << 
       return (true);
     }
 
@@ -383,14 +384,14 @@ namespace pcl
     template <typename Tuple> bool
     CountPlanarInlier::operator () (const Tuple &t)
     {
-      if (!isfinite (thrust::raw_reference_cast(thrust::get<0>(t)).x))
+      if (!isfinite (thrust::get<0>(t).x))
         return (false);
 
       //TODO: make threshold adaptive, depending on z
 
-      return (std::abs (thrust::raw_reference_cast(thrust::get<0>(t)).x * coefficients.x +
-                    thrust::raw_reference_cast(thrust::get<0>(t)).y * coefficients.y +
-                    thrust::raw_reference_cast(thrust::get<0>(t)).z * coefficients.z + coefficients.w) < threshold);
+      return (fabs (thrust::get<0>(t).x * coefficients.x +
+                    thrust::get<0>(t).y * coefficients.y +
+                    thrust::get<0>(t).z * coefficients.z + coefficients.w) < threshold);
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -405,7 +406,7 @@ namespace pcl
       if (isnan (p.x))
         return -1;
 
-      if (std::abs (p.x * coefficients.x +
+      if (fabs (p.x * coefficients.x +
                 p.y * coefficients.y +
                 p.z * coefficients.z + coefficients.w) < threshold)
         // If inlier, return its position in the vector
@@ -432,7 +433,7 @@ namespace pcl
 
       //TODO: make threshold adaptive, depending on z
 
-      if (std::abs (dot (pt, coefficients)) < threshold)
+      if (fabs (dot (pt, coefficients)) < threshold)
         // If inlier, return its position in the vector
         return (thrust::get<1>(t));
       else
@@ -456,7 +457,7 @@ namespace pcl
       float orig_disparity = b * f / pt.z;
       float actual_disparity = orig_disparity * length_pt / (length_pt + D);
 
-      if ((std::abs (actual_disparity - orig_disparity) <= 1.0/6.0) & idx != -1)
+      if ((fabs (actual_disparity - orig_disparity) <= 1.0/6.0) & idx != -1)
         return (idx);
       else
         return -1;
@@ -482,12 +483,12 @@ namespace pcl
       float orig_disparity = b * f / pt.z;
       float actual_disparity = orig_disparity * length_pt / (length_pt + D);
 
-      if ((std::abs (actual_disparity - orig_disparity) <= 1.0/2.0) & (idx != -1)
+      if ((fabs (actual_disparity - orig_disparity) <= 1.0/2.0) & (idx != -1)
           &
             (
-              std::abs (std::acos (normal.x*coefficients.x + normal.y*coefficients.y + normal.z*coefficients.z)) < angle_threshold
+              fabs (acos (normal.x*coefficients.x + normal.y*coefficients.y + normal.z*coefficients.z)) < angle_threshold
               |
-              std::abs (std::acos (-(normal.x*coefficients.x + normal.y*coefficients.y + normal.z*coefficients.z))) < angle_threshold
+              fabs (acos (-(normal.x*coefficients.x + normal.y*coefficients.y + normal.z*coefficients.z))) < angle_threshold
             )
          )
         return (idx);
@@ -505,14 +506,14 @@ namespace pcl
       float4 &normal = thrust::get<1>(t);
       //TODO: make threshold adaptive, depending on z
 
-      if (std::abs (pt.x * coefficients.x +
+      if (fabs (pt.x * coefficients.x +
                 pt.y * coefficients.y +
                 pt.z * coefficients.z + coefficients.w) < threshold
           &
             (
-              std::abs (std::acos (normal.x*coefficients.x + normal.y*coefficients.y + normal.z*coefficients.z)) < angle_threshold
+              fabs (acos (normal.x*coefficients.x + normal.y*coefficients.y + normal.z*coefficients.z)) < angle_threshold
               |
-              std::abs (std::acos (-(normal.x*coefficients.x + normal.y*coefficients.y + normal.z*coefficients.z))) < angle_threshold
+              fabs (acos (-(normal.x*coefficients.x + normal.y*coefficients.y + normal.z*coefficients.z))) < angle_threshold
             )
           )
         // If inlier, return its position in the vector
@@ -531,7 +532,7 @@ namespace pcl
 
       //TODO: make threshold adaptive, depending on z
 
-      if (std::abs (pt.x * coefficients.x +
+      if (fabs (pt.x * coefficients.x +
                 pt.y * coefficients.y +
                 pt.z * coefficients.z + coefficients.w) < threshold)
         // If inlier, return its position in the vector

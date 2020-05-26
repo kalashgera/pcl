@@ -35,7 +35,8 @@
  *
  */
 
-#pragma once
+#ifndef PCL_CUDA_CLOUD_TO_PCL_H_
+#define PCL_CUDA_CLOUD_TO_PCL_H_
 
 #include <pcl/cuda/point_cloud.h>
 
@@ -70,3 +71,5 @@ namespace pcl
     fromPCL (const pcl::PointCloud<pcl::PointXYZRGB> &input, PointCloudAOS<Device> &output);
   } // namespace
 } // namespace
+
+#endif  //#ifndef PCL_CUDA_CLOUD_TO_PCL_H_

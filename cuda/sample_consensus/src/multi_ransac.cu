@@ -68,7 +68,7 @@ namespace pcl
         std::cerr << "[pcl::cuda::MultiRandomSampleConsensus::computeModel] No threshold set!" << std::endl;
         return (false);
       }
-
+      
       // compute number of points
       int nr_points = sac_model_->getIndices ()->size ();
       int nr_remaining_points = nr_points;
@@ -78,7 +78,7 @@ namespace pcl
       // number of valid iterations
       int valid_iterations = 0;
       // each batch has a vector of plane coefficients (float4)
-      std::vector<Hypotheses> h(max_batches_);
+      std::vector<Hypotheses> h (max_batches_);
       std::vector<typename Storage<int>::type> h_samples (max_batches_);
       std::vector<float3> centroids (max_batches_ * iterations_per_batch_);
       // current batch number
@@ -94,7 +94,7 @@ namespace pcl
       int n_best_inliers_count = 0;
       int good_coeff = -1;
       float k = max_batches_ * iterations_per_batch_;
-
+      
         //thrust::host_vector<float3> host_points = sac_model_->getInputCloud()->points;
         //std::cerr << "Input Points:" << std::endl;
         //for (unsigned int print_iter = 0; print_iter < nr_points; ++print_iter)
@@ -106,8 +106,8 @@ namespace pcl
         //}
       std::vector<bool> hypothesis_valid (max_batches_ * iterations_per_batch_, true);
 
-
-      ScopeTimeCPU t ("ALLLLLLLLLLL");
+      
+      ScopeTimeCPU t ("ALL");
       do  // multiple models ..
       {
         double now = pcl::cuda::getTime ();
@@ -123,7 +123,7 @@ namespace pcl
 
         // generate a new batch of hypotheses
         {
-          ScopeTimeCPU t ("generateModelHypotheses");
+          //ScopeTimeCPU t ("generateModelHypotheses");
           sac_model_->generateModelHypotheses (h[cur_batch], h_samples[cur_batch], iterations_per_batch_);
         }
         host_samples = h_samples[cur_batch];
@@ -144,7 +144,7 @@ namespace pcl
 
         // evaluate each hypothesis in this batch
         {
-          ScopeTimeCPU t ("evaluate");
+          //ScopeTimeCPU t ("evaluate");
         for (unsigned int i = 0; i < iterations_per_batch_; i++, cur_iteration ++, valid_iterations ++)
         {
           // hypothesis could be invalid because it's initial sample point was inlier previously
@@ -158,7 +158,7 @@ namespace pcl
           // compute inliers for each model
           IndicesPtr inl_stencil;
           {
-            ScopeTimeCPU t ("selectWithinDistance");
+            //ScopeTimeCPU t ("selectWithinDistance");
             n_inliers_count = sac_model_->selectWithinDistance (h[cur_batch], i, threshold_, inl_stencil, centroids[cur_iteration]);
           }
           // store inliers and inlier count
@@ -178,7 +178,7 @@ namespace pcl
             n_best_inliers_count = n_inliers_count;
             good_coeff = cur_iteration;
 
-            // Compute the k parameter (k=std::log(z)/std::log(1-w^n))
+            // Compute the k parameter (k=log(z)/log(1-w^n))
             float w = (float)((float)n_best_inliers_count / (float)nr_remaining_points);
             float p_no_outliers = 1.0f - pow (w, 1.0f);
             p_no_outliers = (std::max) (std::numeric_limits<float>::epsilon (), p_no_outliers);       // Avoid division by -Inf
@@ -186,7 +186,7 @@ namespace pcl
             if (p_no_outliers == 1.0f)
               k++;
             else
-              k = std::log (1.0f - probability_) / std::log (p_no_outliers);
+              k = log (1.0f - probability_) / log (p_no_outliers);
           }
 
           //fprintf (stderr, "[pcl::cuda::MultiRandomSampleConsensus::computeModel] Trial %d out of %f: %d inliers (best is: %d so far).\n",
@@ -194,7 +194,7 @@ namespace pcl
           // check if we found a valid model
 
           {
-            ScopeTimeCPU t("extracmodel");
+            //ScopeTimeCPU t("extracmodel");
 
           if (valid_iterations >= k)
           {
@@ -205,18 +205,18 @@ namespace pcl
             //if (nr_remaining_points != nr_remaining_points_before_delete)
             {
 
-              // Compute the k parameter (k=std::log(z)/std::log(1-w^n))
+              // Compute the k parameter (k=log(z)/log(1-w^n))
               float w = (float)((float)min_nr_in_shape / (float)nr_remaining_points);
               float p_no_outliers = 1.0f - pow (w, 1.0f);
               p_no_outliers = (std::max) (std::numeric_limits<float>::epsilon (), p_no_outliers);       // Avoid division by -Inf
               p_no_outliers = (std::min) (1.0f - std::numeric_limits<float>::epsilon (), p_no_outliers);   // Avoid division by 0.
               if (p_no_outliers != 1.0f)
               {
-                if (std::log (1.0f - probability_) / std::log (p_no_outliers) < valid_iterations) // we won't find a model with min_nr_in_shape points anymore...
+                if (log (1.0f - probability_) / log (p_no_outliers) < valid_iterations) // we won't find a model with min_nr_in_shape points anymore...
                   find_no_better = true;
                 else
                   if (debug_verbosity_level > 1)
-                    std::cerr << "------->" << std::log (1.0f - probability_) / std::log (p_no_outliers) << "  -vs-  " << valid_iterations << std::endl;
+                    std::cerr << "------->" << log (1.0f - probability_) / log (p_no_outliers) << "  -vs-  " << valid_iterations << std::endl;
               }
             }
 
@@ -297,7 +297,7 @@ namespace pcl
                   n_best_inliers_count = n_inliers_count;
                   good_coeff = b * iterations_per_batch_ + j;
 
-                  // Compute the k parameter (k=std::log(z)/std::log(1-w^n))
+                  // Compute the k parameter (k=log(z)/log(1-w^n))
                   float w = (float)((float)n_best_inliers_count / (float)nr_remaining_points);
                   float p_no_outliers = 1.0f - pow (w, 1.0f);
                   p_no_outliers = (std::max) (std::numeric_limits<float>::epsilon (), p_no_outliers);       // Avoid division by -Inf
@@ -305,7 +305,7 @@ namespace pcl
                   if (p_no_outliers == 1.0f)
                     k++;
                   else
-                    k = std::log (1.0f - probability_) / std::log (p_no_outliers);
+                    k = log (1.0f - probability_) / log (p_no_outliers);
                 }
                 
               }

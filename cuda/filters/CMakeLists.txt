@@ -1,9 +1,7 @@
-set(SUBSYS_NAME cuda_features)
-set(SUBSYS_PATH cuda/features)
-set(SUBSYS_DESC "Point Cloud CUDA Feature Estimation library")
+set(SUBSYS_NAME cuda_filters)
+set(SUBSYS_PATH cuda/filters)
+set(SUBSYS_DESC "Point Cloud CUDA filters library")
 set(SUBSYS_DEPS cuda_common io common)
-
-# ---[ Point Cloud Library - pcl/cuda/io
 
 set(build TRUE)
 PCL_SUBSYS_OPTION(build "${SUBSYS_NAME}" "${SUBSYS_DESC}" ON)
@@ -13,25 +11,23 @@ PCL_SET_SUBSYS_INCLUDE_DIR("${SUBSYS_NAME}" "${SUBSYS_PATH}")
 
 if (build)
     set(srcs
-        src/normal_3d.cu
+        src/voxel_grid.cu
         )
-
+    
     set(incs
-        include/pcl/cuda/features/normal_3d.h
+        include/pcl/cuda/filters/voxel_grid.h
+        include/pcl/cuda/filters/filter.h
+        include/pcl/cuda/filters/voxel_grid_kernels.h
         )
 
     set(LIB_NAME "pcl_${SUBSYS_NAME}")
     include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
     PCL_CUDA_ADD_LIBRARY("${LIB_NAME}" "${SUBSYS_NAME}" ${srcs} ${incs})
-
+    
     set(EXT_DEPS "")
-    #set(EXT_DEPS CUDA)
-    PCL_MAKE_PKGCONFIG("${LIB_NAME}" "${SUBSYS_NAME}" "${SUBSYS_DESC}"
+    PCL_MAKE_PKGCONFIG("${LIB_NAME}" "${SUBSYS_NAME}" "{SUBSYS_DESC}"
       "${SUBSYS_DEPS}" "${EXT_DEPS}" "" "" "")
-
-    # Install include files
+    
     PCL_ADD_INCLUDES("${SUBSYS_NAME}" "${SUBSYS_PATH}" ${incs})
 
 endif()
-
-

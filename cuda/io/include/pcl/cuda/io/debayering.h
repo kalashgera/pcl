@@ -35,7 +35,8 @@
  *
  */
 
-#pragma once
+#ifndef PCL_CUDA_DEBAYERING_H_
+#define PCL_CUDA_DEBAYERING_H_
 
 #include <pcl/cuda/point_cloud.h>
 #include <pcl/io/openni_camera/openni_image.h>
@@ -73,7 +74,7 @@ namespace pcl
   		//unsigned char* data;
   		unsigned char *data;
   		DebayerBilinear (unsigned char *bayer_image, unsigned width, unsigned height);
-               //DebayerBilinear (const openni_wrapper::Image::Ptr& bayer_image);
+  		//DebayerBilinear (const boost::shared_ptr<openni_wrapper::Image>& bayer_image);
   
       __inline__ __host__ __device__ OpenNIRGB operator () (int index) const;
     };
@@ -85,7 +86,7 @@ namespace pcl
   		static unsigned dataSize;
   		static unsigned char* global_data; // has to be initialized only once!
   		unsigned char* data;
-      DebayerEdgeAware (const openni_wrapper::Image::Ptr& bayer_image);
+      DebayerEdgeAware (const boost::shared_ptr<openni_wrapper::Image>& bayer_image);
       ~DebayerEdgeAware ();
   
       __inline__ __host__ __device__ OpenNIRGB operator () (int index) const;
@@ -95,9 +96,9 @@ namespace pcl
     class DebayeringDownsampling
     {
       public:
-        using RGBImageType = typename Storage<OpenNIRGB>::type;
+        typedef typename Storage<OpenNIRGB>::type RGBImageType;
         void
-        compute (const openni_wrapper::Image::Ptr& bayer_image, RGBImageType& rgb_image) const;
+        compute (const boost::shared_ptr<openni_wrapper::Image>& bayer_image, RGBImageType& rgb_image) const;
     };
 
     template <template <typename> class Storage>
@@ -115,25 +116,27 @@ namespace pcl
     class YUV2RGB
     {
       public:
-        using RGBImageType = typename Storage<OpenNIRGB>::type;
+        typedef typename Storage<OpenNIRGB>::type RGBImageType;
         void
-        compute (const openni_wrapper::Image::Ptr& yuv_image, RGBImageType& rgb_image) const;
+        compute (const boost::shared_ptr<openni_wrapper::Image>& yuv_image, RGBImageType& rgb_image) const;
     };
 
     template<template <typename> class Storage>
     class Debayering
     {
       public:
-        using RGBImageType = typename Storage<OpenNIRGB>::type;
+        typedef typename Storage<OpenNIRGB>::type RGBImageType;
         void
-        computeBilinear (const openni_wrapper::Image::Ptr& bayer_image, RGBImageType& rgb_image) const;
+        computeBilinear (const boost::shared_ptr<openni_wrapper::Image>& bayer_image, RGBImageType& rgb_image) const;
         
         //void
-        //computeEdgeAware (const openni_wrapper::Image::Ptr& bayer_image, thrust::host_vector<OpenNIRGB>& rgb_image) const;
+        //computeEdgeAware (const boost::shared_ptr<openni_wrapper::Image>& bayer_image, thrust::host_vector<OpenNIRGB>& rgb_image) const;
         
         //void
-        //computeEdgeAware (const openni_wrapper::Image::Ptr& bayer_image, thrust::device_vector<OpenNIRGB>& rgb_image) const;
+        //computeEdgeAware (const boost::shared_ptr<openni_wrapper::Image>& bayer_image, thrust::device_vector<OpenNIRGB>& rgb_image) const;
     };
 
   } // namespace
 } // namespace
+
+#endif

@@ -35,9 +35,10 @@
  *
  */
 
-#pragma once
+#ifndef PCL_CUDA_SAMPLE_CONSENSUS_RANSAC_H_
+#define PCL_CUDA_SAMPLE_CONSENSUS_RANSAC_H_
 
-#include <pcl/cuda/sample_consensus/sac.h>
+#include "pcl/cuda/sample_consensus/sac.h"
 #include <pcl/cuda/sample_consensus/sac_model.h>
 
 namespace pcl
@@ -64,13 +65,13 @@ namespace pcl
       using SampleConsensus<Storage>::inliers_stencil_;
       using SampleConsensus<Storage>::probability_;
 
-      using SampleConsensusModelPtr = typename SampleConsensusModel<Storage>::Ptr;
-      using Coefficients = typename SampleConsensusModel<Storage>::Coefficients;
-      using Hypotheses = typename SampleConsensusModel<Storage>::Hypotheses;
+      typedef typename SampleConsensusModel<Storage>::Ptr SampleConsensusModelPtr;
+      typedef typename SampleConsensusModel<Storage>::Coefficients Coefficients;
+      typedef typename SampleConsensusModel<Storage>::Hypotheses Hypotheses;
 
-      using Indices = typename SampleConsensusModel<Storage>::Indices;
-      using IndicesPtr = typename SampleConsensusModel<Storage>::IndicesPtr;
-      using IndicesConstPtr = typename SampleConsensusModel<Storage>::IndicesConstPtr;
+      typedef typename SampleConsensusModel<Storage>::Indices Indices;
+      typedef typename SampleConsensusModel<Storage>::IndicesPtr IndicesPtr;
+      typedef typename SampleConsensusModel<Storage>::IndicesConstPtr IndicesConstPtr;
 
       public:
         /** \brief RANSAC (RAndom SAmple Consensus) main constructor
@@ -121,7 +122,7 @@ namespace pcl
         void
         setMaximumBatches (int max_batches)
         {
-          max_batches_ = max_batches_;
+          max_batches_ = max_batches;
         }
 
         /** \brief Sets the maximum number of batches that should be processed.
@@ -130,7 +131,7 @@ namespace pcl
          *  actual number of batch runs might be lower.
          */
         void
-        setIerationsPerBatch(int iterations_per_batch)
+        setIterationsPerBatch(int iterations_per_batch)
         {
           iterations_per_batch_ = iterations_per_batch;
         }
@@ -174,3 +175,6 @@ namespace pcl
 
   } // namespace
 } // namespace
+
+#endif  //#ifndef PCL_CUDA_SAMPLE_CONSENSUS_RANSAC_H_
+

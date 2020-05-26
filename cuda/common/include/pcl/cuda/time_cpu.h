@@ -33,7 +33,8 @@
  *
  */
 
-#pragma once
+#ifndef PCL_CUDA_TIME_CPU_H_
+#define PCL_CUDA_TIME_CPU_H_
 
 #include <iostream>
 #include <cmath>
@@ -119,7 +120,7 @@ inline double
   return (double)(timer_tick.QuadPart)/(double)frequency.QuadPart;
 #else
   timeval current_time;
-  gettimeofday (&current_time, nullptr);
+  gettimeofday (&current_time, NULL);
   return (current_time.tv_sec + 1e-6 * current_time.tv_usec);
 #endif
 }
@@ -135,3 +136,5 @@ inline pcl::cuda::ScopeTimeCPU::~ScopeTimeCPU ()
   double duration = end_time - start_time_;
   std::cerr << title_ << " took " << 1000 * duration << "ms. " << std::endl;
 }
+
+#endif  //#ifndef PCL_NORMS_H_

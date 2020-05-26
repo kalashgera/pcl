@@ -20,12 +20,13 @@
     Thanks to Linh Hah for additions and fixes.
 */
 
-#pragma once
+#ifndef CUTIL_MATH_H
+#define CUTIL_MATH_H
 
 #include "cuda_runtime.h"
 
-using uint = unsigned int;
-using ushort = unsigned short;
+typedef unsigned int uint;
+typedef unsigned short ushort;
 
 #ifndef __CUDACC__
 #include <math.h>
@@ -1323,3 +1324,5 @@ inline __device__ __host__ float4 smoothstep(float4 a, float4 b, float4 x)
 	float4 y = clamp((x - a) / (b - a), 0.0f, 1.0f);
 	return (y*y*(make_float4(3.0f) - (make_float4(2.0f)*y)));
 }
+
+#endif

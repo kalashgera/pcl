@@ -74,9 +74,9 @@ public:
 
     void init (int n);
 
-    std::vector<int> parent;
-    std::vector<int> rank;
-    std::vector<int> size;
+    vector<int> parent;
+    vector<int> rank;
+    vector<int> size;
 private:
     DjSets(const DjSets&);
     void operator =(const DjSets&);
@@ -98,14 +98,14 @@ template <typename T>
 class Graph
 {
 public:
-    using Edge = GraphEdge<T>;
+    typedef GraphEdge<T> Edge;
 
     Graph(int numv, int nume_max);
 
     void addEdge(int from, int to, const T& val=T());
 
-    std::vector<int> start;
-    std::vector<Edge> edges;
+    vector<int> start;
+    vector<Edge> edges;
 
     int numv;
     int nume_max;

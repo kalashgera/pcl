@@ -35,7 +35,8 @@
  *
  */
 
-#pragma once
+#ifndef PCL_CUDA_SAMPLE_CONSENSUS_RANSAC_H_
+#define PCL_CUDA_SAMPLE_CONSENSUS_RANSAC_H_
 
 #include <pcl/cuda/sample_consensus/sac.h>
 #include <pcl/cuda/sample_consensus/sac_model.h>
@@ -64,10 +65,10 @@ namespace pcl
       using SampleConsensus<Storage>::inliers_stencil_;
       using SampleConsensus<Storage>::probability_;
 
-      using SampleConsensusModelPtr = typename SampleConsensusModel<Storage>::Ptr;
-      using Coefficients = typename SampleConsensusModel<Storage>::Coefficients;
-      using Indices = typename SampleConsensusModel<Storage>::Indices;
-      using Hypotheses = typename SampleConsensusModel<Storage>::Hypotheses;
+      typedef typename SampleConsensusModel<Storage>::Ptr SampleConsensusModelPtr;
+      typedef typename SampleConsensusModel<Storage>::Coefficients Coefficients;
+      typedef typename SampleConsensusModel<Storage>::Indices Indices;
+      typedef typename SampleConsensusModel<Storage>::Hypotheses Hypotheses;
 
       public:
         /** \brief RANSAC (RAndom SAmple Consensus) main constructor
@@ -100,3 +101,6 @@ namespace pcl
     };
   } // namespace
 } // namespace
+
+#endif  //#ifndef PCL_CUDA_SAMPLE_CONSENSUS_RANSAC_H_
+

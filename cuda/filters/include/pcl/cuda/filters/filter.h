@@ -33,39 +33,37 @@
  *
  */
 
-#pragma once
+#ifndef PCL_CUDA_FILTER_H_
+#define PCL_CUDA_FILTER_H_
 
-#include <pcl_cuda/pcl_cuda_base.h>
+#include <pcl/cuda/pcl_cuda_base.h>
 #include <float.h>
 
-namespace pcl_cuda
+namespace pcl
 {
-  /** \brief Removes points with x, y, or z equal to NaN
-    * \param cloud_in the input point cloud
-    * \param cloud_out the input point cloud
-    * \param index the mapping (ordered): cloud_out.points[i] = cloud_in.points[index[i]]
-    * \note The density of the point cloud is lost.
-    * \note Can be called with cloud_in == cloud_out
-    */
-//  template <typename PointT> void removeNaNFromPointCloud (const pcl::PointCloud<PointT> &cloud_in, pcl::PointCloud<PointT> &cloud_out, std::vector<int> &index);
-
-  ////////////////////////////////////////////////////////////////////////////////////////////
+namespace cuda
+{
+ ////////////////////////////////////////////////////////////////////////////////////////////
   /** \brief @b Filter represents the base filter class. Some generic 3D
     * operations that are applicable to all filters are defined here as static
     * methods.
     */
-  template <typename CloudT>
-  class Filter : public PCLCUDABase<CloudT>
+  template <template <typename> class Storage>
+  class Filter : public PCLCUDABase<Storage>
   {
-    using PCLCUDABase<CloudT>::initCompute;
-    using PCLCUDABase<CloudT>::deinitCompute;
+    using PCLCUDABase<Storage>::initCompute;
+    using PCLCUDABase<Storage>::deinitCompute;
 
     public:
-      using PCLCUDABase<CloudT>::input_;
+      using PCLCUDABase<Storage>::input_;
+      using PCLCUDABase<Storage>::indices_;
+      using PCLCUDABase<Storage>::x_idx_;
+      using PCLCUDABase<Storage>::y_idx_;
+      using PCLCUDABase<Storage>::z_idx_;
 
-      using PointCloud = typename PCLCUDABase<CloudT>::PointCloud;
-      using PointCloudPtr = typename PointCloud::Ptr;
-      using PointCloudConstPtr = typename PointCloud::ConstPtr;
+      typedef PointCloudAOS<Storage> PointCloud;
+      typedef typename PointCloud::Ptr PointCloudPtr;
+      typedef typename PointCloud::ConstPtr PointCloudConstPtr;
 
       /** \brief Empty constructor. */
       Filter () : filter_field_name_ (""), 
@@ -132,7 +130,7 @@ namespace pcl_cuda
         * \param output the resultant filtered point cloud dataset on the device
         */
       inline void
-      filter (PointCloud &output)
+      filter (const boost::shared_ptr<PointCloud> &output)
       {
         if (!initCompute ()) return;
 
@@ -168,10 +166,13 @@ namespace pcl_cuda
         * The implementation needs to set output.{points, width, height, is_dense}.
         */
       virtual void 
-      applyFilter (PointCloud &output) = 0;
+      applyFilter (const boost::shared_ptr <PointCloud> &output) = 0;
 
       /** \brief Get a string representation of the name of this class. */
       inline const std::string& 
       getClassName () const { return (filter_name_); }
   };
 }
+}
+
+#endif  //#ifndef PCL_FILTER_H_

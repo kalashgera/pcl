@@ -34,7 +34,8 @@
  * Author: Julius Kammerl (julius@kammerl.de)
  */
 
-#pragma once
+#ifndef POINTCLOUD_DEPTH_NEIGHBOR_SEARCH_H
+#define POINTCLOUD_DEPTH_NEIGHBOR_SEARCH_H
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -78,9 +79,9 @@ namespace pcl
       }
 
       // public typedefs
-      using PointCloud = pcl::PointCloud<PointT>;
-      using PointCloudPtr = typename PointCloud::Ptr;
-      using PointCloudConstPtr = typename PointCloud::ConstPtr;
+      typedef pcl::PointCloud<PointT> PointCloud;
+      typedef boost::shared_ptr<PointCloud> PointCloudPtr;
+      typedef boost::shared_ptr<const PointCloud> PointCloudConstPtr;
 
 
       /** \brief Provide a pointer to the input data set.
@@ -338,3 +339,6 @@ namespace pcl
 }
 
 //#include "organized_neighbor_search.hpp"
+
+#endif
+

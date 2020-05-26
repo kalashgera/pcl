@@ -35,7 +35,8 @@
  *
  */
 
-#pragma once
+#ifndef PCL_CUDA_KINECT_SMOOTHING_H_
+#define PCL_CUDA_KINECT_SMOOTHING_H_
 
 #include <pcl/io/openni_camera/openni_image.h>
 #include <thrust/tuple.h>
@@ -102,7 +103,7 @@ namespace pcl
         if (depth == 0 | isnan(depth) | isinf(depth))
           return 0;
 #else
-        if (depth == 0 | std::isnan(depth) | std::isinf(depth))
+        if (depth == 0 | pcl_isnan(depth) | pcl_isinf(depth))
           return 0;
 #endif
         int xIdx = idx % width_;
@@ -136,7 +137,7 @@ namespace pcl
             // ignore invalid points
             if (otherDepth == 0)
               continue;
-            if (std::abs(otherDepth - depth) > 200)
+            if (fabs(otherDepth - depth) > 200)
               continue;
 
             ++counter;
@@ -176,7 +177,7 @@ namespace pcl
         if (depth == 0 | isnan(depth) | isinf(depth))
           return 0.0f;
 #else
-        if (depth == 0 | std::isnan(depth) | std::isinf(depth))
+        if (depth == 0 | pcl_isnan(depth) | pcl_isinf(depth))
           return 0.0f;
 #endif
         int xIdx = idx % width_;
@@ -247,7 +248,7 @@ namespace pcl
         if (disparity == 0 | isnan(disparity) | isinf(disparity))
           return make_float3 (0,0,0);
 #else
-        if (disparity == 0 | std::isnan(disparity) | std::isinf(disparity))
+        if (disparity == 0 | pcl_isnan(disparity) | pcl_isinf(disparity))
           return make_float3 (0,0,0);
 #endif
         int xIdx = idx % width_;
@@ -292,3 +293,6 @@ namespace pcl
 
   } // namespace
 } // namespace
+
+#endif
+

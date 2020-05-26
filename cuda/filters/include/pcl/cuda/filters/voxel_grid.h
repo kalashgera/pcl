@@ -1,166 +1,145 @@
-/*
- * Software License Agreement (BSD License)
- *
- *  Copyright (c) 2011, Willow Garage, Inc.
- *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions
- *  are met:
- *
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *   * Neither the name of Willow Garage, Inc. nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- *
- */
+#ifndef PCL_CUDA_FILTERS_VOXEL_GRID_H_
+#define PCL_CUDA_FILTERS_VOXEL_GRID_H_
 
-#pragma once
+#include <pcl/cuda/filters/filter.h>
+#include <pcl/cuda/point_cloud.h>
+#include <pcl/pcl_exports.h>
+#include <float.h>
+#include "pcl/cuda/filters/voxel_grid_kernels.h"
+#include <thrust/sort.h>
+#include <thrust/unique.h>
+#include <thrust/execution_policy.h>
 
-#include <pcl_cuda/filters/filter.h>
-#include <pcl_cuda/filters/passthrough.h>
-#include <thrust/count.h>
-#include <thrust/remove.h>
-#include <vector_types.h>
-
-namespace pcl_cuda
+namespace pcl
 {
-  ///////////////////////////////////////////////////////////////////////////////////////////
-  /** \brief @b VoxelGrid assembles a local 3D grid over a given PointCloud, and downsamples + filters the data.
+  namespace cuda
+  {
+    /** \brief Obtain the maximum and minimum points in 3D from a given point cloud.
+     *  \param[in] cloud the pointer to a PointCloudAOS dataset
+     *  \param[out] min_pt the minimum data point
+     *  \param[out] max_pt the maximum data point
+     *
+    template <typename InputIteratorT, template <typename> class Storage> void
+    getMinMax3D (const boost::shared_ptr<PointCloudAOS<Storage> > &cloud,
+                 InputIteratorT begin, InputIteratorT end);
     */
-  template <typename CloudT>
-  class VoxelGrid: public Filter<CloudT>
-  {
-    public:
-      using Filter<CloudT>::filter_name_;
 
-      using PointCloud = typename PCLCUDABase<CloudT>::PointCloud;
-      using PointCloudPtr = typename PointCloud::Ptr;
-      using PointCloudConstPtr = typename PointCloud::ConstPtr;
+    /** \brief @b VoxelGrid represents implementation of voxel grid
+     * filter class adapted for a PointCloudAOS structure to enable 
+     * compatibility with CUDA
+     * \author Jonah Gourlay
+     * \ingroup cuda filters
+     */
+    template <template <typename> class Storage> 
+    class VoxelGrid : public Filter<Storage>
+    {
+      public:
+        using Filter<Storage>::filter_name_;
+        using Filter<Storage>::getClassName;
+        using Filter<Storage>::input_;
+        using Filter<Storage>::indices_;
+        using Filter<Storage>::x_idx_;
+        using Filter<Storage>::y_idx_;
+        using Filter<Storage>::z_idx_;
+      
+        typedef typename Storage<int>::type VectorXi;
+        typedef typename Storage<float>::type VectorXf;
+        typedef typename Storage<cloud_point_index_idx>::type VectorCP;
+        typedef typename PointIterator<Storage, cloud_point_index_idx>::type VectorCPIter;
+        typedef thrust::tuple<float3, int> PtIdxTup;
+        typedef typename PointIterator<Storage, const PointXYZRGB>::type PtIter;
+        typedef thrust::counting_iterator<int> CountIter;
+        typedef thrust::tuple<PtIter, CountIter> TupIter;
+        typedef thrust::zip_iterator<TupIter> ZipIter;
 
-      /** \brief Empty constructor. */
-      VoxelGrid ()
-      {
-        filter_name_ = "VoxelGrid";
-      };
+        typedef thrust::tuple<VectorCPIter, CountIter> TupIterInt;
+        typedef thrust::zip_iterator<TupIterInt> ZipIterInt;
 
-    protected:
-      /** \brief Filter a Point Cloud.
-        * \param output the resultant point cloud message
-        */
-      void 
-      applyFilter (PointCloud &output)
-      {
-        std::cerr << "applyFilter" << std::endl;
-      }
-  };
-  
-  ///////////////////////////////////////////////////////////////////////////////////////////
-  template <>
-  class VoxelGrid<PointCloudAOS<Device> >: public Filter<PointCloudAOS<Device> >
-  {
-    public:
-      /** \brief Empty constructor. */
-      VoxelGrid ()
-      {
-        filter_name_ = "VoxelGridAOS";
-      };
+        typedef PointCloudAOS<Storage> PointCloud;
+        typedef typename PointCloud::Ptr PointCloudPtr;
+        typedef typename PointCloud::ConstPtr PointCloudConstPtr;
+        typedef boost::shared_ptr<VoxelGrid> Ptr;
+        typedef boost::shared_ptr<const VoxelGrid> ConstPtr;
 
-    protected:
-      /** \brief Filter a Point Cloud.
-        * \param output the resultant point cloud message
-        */
-      void 
-      applyFilter (PointCloud &output)
-      {
-        // Allocate enough space
-        output.points.resize (input_->points.size ());
-        // Copy data
-        Device<PointXYZRGB>::type::iterator nr_points = thrust::copy_if (input_->points.begin (), input_->points.end (), output.points.begin (), isFiniteAOS ());
-        output.points.resize (nr_points - output.points.begin ());
-
-        //std::cerr << "[applyFilterAOS]: ";
-        //std::cerr << input_->points.size () << " " << output.points.size () << std::endl;
-      }
-  };
- 
-  //////////////////////////////////////////////////////////////////////////////////////////
-  template <>
-  class VoxelGrid<PointCloudSOA<Device> >: public Filter<PointCloudSOA<Device> >
-  {
-    public:
-      /** \brief Empty constructor. */
-      VoxelGrid () : zip_(false)
-      {
-        filter_name_ = "VoxelGridSOA";
-      };
-
-      inline void
-      setZip (bool zip)
-      {
-        zip_ = zip;
-      }
-
-
-    protected:
-      /** \brief Filter a Point Cloud.
-        * \param output the resultant point cloud message
-        */
-      void 
-      applyFilter (PointCloud &output)
-      {
-        if (!zip_)
+      public:
+        /** \brief Empty constructor. */
+        VoxelGrid () :
+          leaf_size_ (make_float4 (0.0,0.0,0.0,0.0)),
+          inverse_leaf_size_ (make_float4 (0.0,0.0,0.0,0.0)),
+          downsample_all_data_ (true),
+          save_leaf_layout_ (false),
+          leaf_layout_ (),
+          min_b_ (4,0),
+          max_b_ (4,0),
+          div_b_ (4,0),
+          divb_mul_ (4,0),
+          filter_field_name_ (""),
+          filter_limit_min_ (-FLT_MIN),
+          filter_limit_max_ (FLT_MAX),
+          filter_limit_negative_ (false),
+          min_points_per_voxel_ (0)
         {
-          // Allocate enough space
-          output.resize (input_->size ());
-          // Copy data
-          Device<float>::type::iterator nr_points = thrust::copy_if (input_->points_x.begin (), input_->points_x.end (), output.points_x.begin (), isFiniteSOA ());
-          nr_points = thrust::copy_if (input_->points_y.begin (), input_->points_y.end (), output.points_y.begin (), isFiniteSOA ());
-          nr_points = thrust::copy_if (input_->points_z.begin (), input_->points_z.end (), output.points_z.begin (), isFiniteSOA ());
-          output.resize (nr_points - output.points_z.begin ());
-        
-          //std::cerr << "[applyFilterSOA]: ";
-          //std::cerr << input_->size () << " " << output.size () << std::endl;
+            filter_name_ = "VoxelGrid";
         }
 
-        else
+        /** \brief Destructor. */
+        virtual ~VoxelGrid () {}
+
+        /** \brief Set the voxel grid leaf size.
+         *  \param[in] lx the leaf size for X
+         *  \param[in] ly the leaf size for Y
+         *  \param[in] lz the leaf size for Z
+         */
+        inline void 
+        setLeafSize (float lx, float ly, float lz)
         {
-          output = *input_;
-          PointCloud::zip_iterator result = thrust::remove_if (output.zip_begin (), output.zip_end (), isFiniteZIPSOA ());
-          PointCloud::iterator_tuple result_tuple = result.get_iterator_tuple ();
-          PointCloud::float_iterator xiter = thrust::get<0> (result_tuple),
-                                     yiter = thrust::get<1> (result_tuple),
-                                     ziter = thrust::get<2> (result_tuple);
-
-          unsigned badpoints = distance (xiter, output.points_x.end ());
-          unsigned goodpoints = distance (output.points_x.begin (), xiter);
-
-          output.resize (goodpoints);
-
-          //std::cerr << "[applyFilterSOA-ZIP]: ";
-          //std::cerr << input_->size () << " " << output.size () << std::endl;
+          leaf_size_.x = lx; leaf_size_.y = ly; leaf_size_.z = lz;
+          // Avoid division errors
+          if (leaf_size_.w == 0)
+            leaf_size_.w = 1;
+          
+          inverse_leaf_size_ = make_float4(1.0,1.0,1.0,1.0) / leaf_size_;
         }
-      }
 
-    private:
-      bool zip_;
-  };
+        /** \brief Get the voxel grid leaf size. */
+        inline float3
+        getLeafSize () 
+        { 
+          float3 leaf_size;
+          leaf_size.x = leaf_size_.x;
+          leaf_size.y = leaf_size_.y;
+          leaf_size.z = leaf_size_.z;
+
+          return leaf_size; 
+        }
+      
+      private:
+        float4 leaf_size_;
+        float4 inverse_leaf_size_;
+
+        bool downsample_all_data_;
+        bool save_leaf_layout_;
+
+        std::vector<int> leaf_layout_;
+
+        std::vector<int> min_b_, max_b_, div_b_, divb_mul_;
+
+        std::string filter_field_name_;
+
+        double filter_limit_min_;
+        double filter_limit_max_;
+
+        bool filter_limit_negative_;
+
+        unsigned int min_points_per_voxel_;
+
+        /** \brief Downsample a Point Cloud using a voxelized grid approach
+         *  \param[out] output the resultant point cloud
+         */ 
+        void
+        applyFilter (const boost::shared_ptr<PointCloud> &output);
+    };
+  }
 }
+
+#endif //PCL_CUDA_FILTERS_VOXEL_GRID_H_

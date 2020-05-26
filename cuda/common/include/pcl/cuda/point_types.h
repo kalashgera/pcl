@@ -35,7 +35,8 @@
  *
  */
 
-#pragma once
+#ifndef PCL_CUDA_POINT_TYPES_H_
+#define PCL_CUDA_POINT_TYPES_H_
 
 #include <pcl/cuda/common/point_type_rgb.h>
 #include <cuda.h>
@@ -200,3 +201,6 @@ namespace cuda
   };
 } // namespace
 } // namespace
+
+#endif  //#ifndef PCL_CUDA_POINT_TYPES_H_
+

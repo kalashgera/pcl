@@ -35,7 +35,8 @@
  *
  */
 
-#pragma once
+#ifndef PCL_CUDA_NORMAL_3D_H_
+#define PCL_CUDA_NORMAL_3D_H_
 
 #include <pcl/pcl_exports.h>
 
@@ -49,8 +50,8 @@ namespace pcl
     template <template <typename> class Storage>
     struct NormalEstimationKernel
     {
-      using CloudConstPtr = typename PointCloudAOS<Storage>::ConstPtr;
-      NormalEstimationKernel (const typename PointCloudAOS<Storage>::ConstPtr &input, float focallength, float sqr_radius, float sqrt_desired_nr_neighbors)
+      typedef boost::shared_ptr <const PointCloudAOS <Storage> > CloudConstPtr;
+      NormalEstimationKernel (const boost::shared_ptr <const PointCloudAOS <Storage> > &input, float focallength, float sqr_radius, float sqrt_desired_nr_neighbors)
         : points_ (thrust::raw_pointer_cast(&input->points[0]))
         , focallength_ (focallength)
         , search_ (input, focallength, sqr_radius)
@@ -97,7 +98,7 @@ namespace pcl
     template <template <typename> class Storage>
     struct FastNormalEstimationKernel
     {
-      FastNormalEstimationKernel (const typename PointCloudAOS<Storage>::ConstPtr &input, int width, int height)
+      FastNormalEstimationKernel (const boost::shared_ptr <const PointCloudAOS <Storage> > &input, int width, int height)
         : points_ (thrust::raw_pointer_cast(&input->points[0])), width_(width), height_(height)
       {}
   
@@ -112,10 +113,10 @@ namespace pcl
         int yIdx = idx / width_;
 
         // are we at a border? are our neighbor valid points?
-        bool west_valid  = (xIdx > 1)         && !isnan (points_[idx-1].z) &&      std::abs (points_[idx-1].z - query_pt.z) < 200;
-        bool east_valid  = (xIdx < width_-1)  && !isnan (points_[idx+1].z) &&      std::abs (points_[idx+1].z - query_pt.z) < 200;
-        bool north_valid = (yIdx > 1)         && !isnan (points_[idx-width_].z) && std::abs (points_[idx-width_].z - query_pt.z) < 200;
-        bool south_valid = (yIdx < height_-1) && !isnan (points_[idx+width_].z) && std::abs (points_[idx+width_].z - query_pt.z) < 200;
+        bool west_valid  = (xIdx > 1)         && !isnan (points_[idx-1].z) &&      fabs (points_[idx-1].z - query_pt.z) < 200;
+        bool east_valid  = (xIdx < width_-1)  && !isnan (points_[idx+1].z) &&      fabs (points_[idx+1].z - query_pt.z) < 200;
+        bool north_valid = (yIdx > 1)         && !isnan (points_[idx-width_].z) && fabs (points_[idx-width_].z - query_pt.z) < 200;
+        bool south_valid = (yIdx < height_-1) && !isnan (points_[idx+width_].z) && fabs (points_[idx+width_].z - query_pt.z) < 200;
 
         float3 horiz, vert;
         if (west_valid & east_valid)
@@ -139,7 +140,7 @@ namespace pcl
         float3 normal = cross (horiz, vert);
 
         float curvature = length (normal);
-        curvature = std::abs(horiz.z) > 0.04 | std::abs(vert.z) > 0.04 | !west_valid | !east_valid | !north_valid | !south_valid;
+        curvature = fabs(horiz.z) > 0.04 | fabs(vert.z) > 0.04 | !west_valid | !east_valid | !north_valid | !south_valid;
 
         float3 mc = normalize (normal);
         if ( dot (query_pt, mc) > 0 )
@@ -155,18 +156,18 @@ namespace pcl
     template <template <typename> class Storage>
     struct NormalDeviationKernel
     {
-      using CloudConstPtr = typename PointCloudAOS<Storage>::ConstPtr;
-      NormalDeviationKernel (const typename PointCloudAOS<Storage>::ConstPtr &input, float focallength, float sqr_radius, float sqrt_desired_nr_neighbors)
+      typedef boost::shared_ptr <const PointCloudAOS <Storage> > CloudConstPtr;
+      NormalDeviationKernel (const boost::shared_ptr <const PointCloudAOS <Storage> > &input, float focallength, float sqr_radius, float sqrt_desired_nr_neighbors)
         : points_ (thrust::raw_pointer_cast(&input->points[0]))
         , focallength_ (focallength)
         , search_ (input, focallength, sqr_radius)
         , sqr_radius_(sqr_radius)
         , sqrt_desired_nr_neighbors_ (sqrt_desired_nr_neighbors)
       {}
-
+  
       template <typename Tuple>
       inline __host__ __device__
-      float4 operator () (const Tuple &t)
+      float4 operator () (Tuple &t)
       {
         float3 query_pt = thrust::get<0>(t);
         float4 normal = thrust::get<1>(t);
@@ -182,14 +183,14 @@ namespace pcl
                      normal.z * (query_pt.z - centroid.z) / sqrt(sqr_radius_) ; 
 
 
-        //return make_float4 (normal.x*proj, normal.y*proj, normal.z*proj, clamp (std::abs (proj), 0.0f, 1.0f));
+        //return make_float4 (normal.x*proj, normal.y*proj, normal.z*proj, clamp (fabs (proj), 0.0f, 1.0f));
         return make_float4 (
            (centroid.x - query_pt.x) / sqrt(sqr_radius_) ,
            (centroid.y - query_pt.y) / sqrt(sqr_radius_) ,
            (centroid.z - query_pt.z) / sqrt(sqr_radius_) ,
            0);
       }
-
+  
       const PointXYZRGB *points_;
       float focallength_;
       OrganizedRadiusSearch<CloudConstPtr> search_;
@@ -199,3 +200,7 @@ namespace pcl
 
   } // namespace
 } // namespace
+
+#endif  
+
+

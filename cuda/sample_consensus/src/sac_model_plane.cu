@@ -192,12 +192,12 @@ namespace pcl
     template <typename Tuple> bool
     CountPlanarInlier::operator () (const Tuple &t)
     {
-      if (!isfinite (thrust::raw_reference_cast(thrust::get<0>(t)).x))
+      if (!isfinite (thrust::get<0>(t).x))
         return (false);
 
-      return (std::abs (thrust::raw_reference_cast(thrust::get<0>(t)).x * coefficients.x +
-                    thrust::raw_reference_cast(thrust::get<0>(t)).y * coefficients.y +
-                    thrust::raw_reference_cast(thrust::get<0>(t)).z * coefficients.z + coefficients.w) < threshold);
+      return (fabs (thrust::get<0>(t).x * coefficients.x +
+                    thrust::get<0>(t).y * coefficients.y +
+                    thrust::get<0>(t).z * coefficients.z + coefficients.w) < threshold);
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -213,7 +213,7 @@ namespace pcl
       pt.z = thrust::get<0>(t).z;
       pt.w = 1;
 
-      if (std::abs (dot (pt, coefficients)) < threshold)
+      if (fabs (dot (pt, coefficients)) < threshold)
         // If inlier, return its position in the vector
         return (thrust::get<1>(t));
       else

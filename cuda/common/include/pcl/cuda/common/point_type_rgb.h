@@ -33,7 +33,8 @@
  *
  */
 
-#pragma once
+#ifndef PCL_CUDA_COMMON_POINT_TYPE_RGB_H_
+#define PCL_CUDA_COMMON_POINT_TYPE_RGB_H_
 
 #include <cuda.h>
 #include <pcl/cuda/cutil_math.h>
@@ -64,7 +65,7 @@ namespace cuda
     inline __host__ __device__ RGB (char _r, char _g, char _b, char _alpha) :
                                        r(_r), g(_g), b(_b), alpha(_alpha) {}
 
-    inline __host__ __device__ bool operator == (const RGB &rhs) const
+    inline __host__ __device__ bool operator == (const RGB &rhs)
     {
       return (r == rhs.r && g == rhs.g && b == rhs.b && alpha == rhs.alpha);
     }
@@ -117,3 +118,5 @@ namespace cuda
 
 } // namespace
 } // namespace
+#endif  //#ifndef PCL_CUDA_COMMON_POINT_TYPE_RGB_H_
+

@@ -107,7 +107,7 @@ namespace pcl
       it = thrust::copy_if (indices_stencil_->begin (), indices_stencil_->end (), indices_->begin (), isInlier ());
       indices_->erase (it, indices_->end ());
 
-      std::cerr << "setInputCloud :" << indices_->size () << " valid points ( " << indices_->size () / (float) input_->points.size () << " %)" << std::endl;
+      std::cerr << "setInputCloud :" << indices_->size () << " valid points ( " << indices_->size () / (float) input_->points.size () * 100 << " %)" << std::endl;
 
     }
 

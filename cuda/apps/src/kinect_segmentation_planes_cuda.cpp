@@ -35,43 +35,43 @@
  *
  */
 
-#include <pcl/memory.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+
+#include <boost/shared_ptr.hpp>
+
+#include <pcl/cuda/features/normal_3d.h>
 #include <pcl/cuda/time_cpu.h>
 #include <pcl/cuda/time_gpu.h>
-#include <pcl/cuda/features/normal_3d.h>
 #include <pcl/cuda/io/cloud_to_pcl.h>
-#include <pcl/cuda/io/disparity_to_cloud.h>
 #include <pcl/cuda/io/extract_indices.h>
+#include <pcl/cuda/io/disparity_to_cloud.h>
 #include <pcl/cuda/io/host_device.h>
 #include <pcl/cuda/segmentation/connected_components.h>
 #include <pcl/cuda/segmentation/mssegmentation.h>
+
 #include <pcl/io/openni_grabber.h>
 #include <pcl/io/pcd_grabber.h>
 #include <pcl/visualization/cloud_viewer.h>
 
 #include <opencv2/highgui/highgui.hpp>
-#include <opencv2/gpu/gpu.hpp>
+#include "opencv2/gpu/gpu.hpp"
 
-#include <fstream>
-#include <functional>
 #include <iostream>
-#include <mutex>
-
+#include <fstream>
 
 using namespace pcl::cuda;
 
 template <template <typename> class Storage>
 struct ImageType
 {
-  using type = void;
+  typedef void type;
 };
 
 template <>
 struct ImageType<Device>
 {
-  using type = cv::gpu::GpuMat;
+  typedef cv::gpu::GpuMat type;
   static void createContinuous (int h, int w, int typ, type &mat)
   {
     cv::gpu::createContinuous (h, w, typ, mat);
@@ -81,7 +81,7 @@ struct ImageType<Device>
 template <>
 struct ImageType<Host>
 {
-  using type = cv::Mat;
+  typedef cv::Mat type;
   static void createContinuous (int h, int w, int typ, type &mat)
   {
     mat = cv::Mat (h, w, typ); // assume no padding at the end of line
@@ -97,13 +97,13 @@ class Segmentation
 
     void viz_cb (pcl::visualization::PCLVisualizer& viz)
     {
-      std::lock_guard<std::mutex> l(m_mutex);
+      static bool first_time = true;
+      boost::mutex::scoped_lock l(m_mutex);
       if (new_cloud)
       {
-        //using ColorHandler = pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGBNormal>;
-        using ColorHandler = pcl::visualization::PointCloudColorHandlerGenericField <pcl::PointXYZRGBNormal>;
+        //typedef pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGBNormal> ColorHandler;
+        typedef pcl::visualization::PointCloudColorHandlerGenericField <pcl::PointXYZRGBNormal> ColorHandler;
         ColorHandler Color_handler (normal_cloud,"curvature");
-        static bool first_time = true;
         if (!first_time)
         {
           viz.removePointCloud ("normalcloud");
@@ -124,7 +124,7 @@ class Segmentation
       pcl::PointCloud<pcl::PointXYZRGB>::Ptr output (new pcl::PointCloud<pcl::PointXYZRGB>);
       PointCloudAOS<Host> data_host;
       data_host.points.resize (cloud->points.size());
-      for (std::size_t i = 0; i < cloud->points.size (); ++i)
+      for (size_t i = 0; i < cloud->points.size (); ++i)
       {
         PointXYZRGB pt;
         pt.x = cloud->points[i].x;
@@ -141,23 +141,23 @@ class Segmentation
 
       // we got a cloud in device..
 
-      shared_ptr<typename Storage<float4>::type> normals;      
+      boost::shared_ptr<typename Storage<float4>::type> normals;
+      float focallength = 580/2.0;
       {
         ScopeTimeCPU time ("TIMING: Normal Estimation");
-        constexpr float focallength = 580/2.0;
         normals = computePointNormals<Storage, typename PointIterator<Storage,PointXYZRGB>::type > (data->points.begin (), data->points.end (), focallength, data, 0.05, 30);
       }
       go_on = false;
 
-      std::lock_guard<std::mutex> l(m_mutex);
+      boost::mutex::scoped_lock l(m_mutex);
       normal_cloud.reset (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
       toPCL (*data, *normals, *normal_cloud);
       new_cloud = true;
     }
 
     template <template <typename> class Storage> void 
-    cloud_cb (const openni_wrapper::Image::Ptr& image,
-              const openni_wrapper::DepthImage::Ptr& depth_image,
+    cloud_cb (const boost::shared_ptr<openni_wrapper::Image>& image,
+              const boost::shared_ptr<openni_wrapper::DepthImage>& depth_image, 
               float constant)
     {
       static unsigned count = 0;
@@ -178,7 +178,7 @@ class Segmentation
       // Compute the PointCloud on the device
       d2c.compute<Storage> (depth_image, image, constant, data, true, 2);
 
-      shared_ptr<typename Storage<float4>::type> normals;
+      boost::shared_ptr<typename Storage<float4>::type> normals;
       {
         ScopeTimeCPU time ("TIMING: Normal Estimation");
         normals = computeFastPointNormals<Storage> (data);
@@ -220,7 +220,7 @@ class Segmentation
       cv::imshow ("NormalImage", seg);
       cv::waitKey (2);
 
-      std::lock_guard<std::mutex> l(m_mutex);
+      boost::mutex::scoped_lock l(m_mutex);
       normal_cloud.reset (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
       toPCL (*data, *normals, *normal_cloud);
       new_cloud = true;
@@ -232,66 +232,69 @@ class Segmentation
     {
       if (use_file)
       {
+        pcl::Grabber* filegrabber = 0;
+
         float frames_per_second = 1;
         bool repeat = false;
 
         std::string path = "./frame_0.pcd";
-        pcl::PCDGrabber<pcl::PointXYZRGB > filegrabber {path, frames_per_second, repeat};
+        filegrabber = new pcl::PCDGrabber<pcl::PointXYZRGB > (path, frames_per_second, repeat);
         
         if (use_device)
         {
           std::cerr << "[Segmentation] Using GPU..." << std::endl;
-          std::function<void (const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr&)> f = std::bind (&Segmentation::file_cloud_cb<Device>, this, _1);
-          filegrabber.registerCallback (f);
+          boost::function<void (const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr&)> f = boost::bind (&Segmentation::file_cloud_cb<Device>, this, _1);
+          filegrabber->registerCallback (f);
         }
         else
         {
 //          std::cerr << "[Segmentation] Using CPU..." << std::endl;
-//          std::function<void (const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr&)> f = std::bind (&Segmentation::file_cloud_cb<Host>, this, _1);
-//          filegrabber.registerCallback (f);
+//          boost::function<void (const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr&)> f = boost::bind (&Segmentation::file_cloud_cb<Host>, this, _1);
+//          filegrabber->registerCallback (f);
         }
 
-        filegrabber.start ();
+        filegrabber->start ();
         while (go_on)//!viewer.wasStopped () && go_on)
         {
           pcl_sleep (1);
         }
-        filegrabber.stop ();
+        filegrabber->stop ();
       }
       else
       {
-        pcl::OpenNIGrabber grabber {};
+        pcl::Grabber* grabber = new pcl::OpenNIGrabber();
 
+        boost::signals2::connection c;
         if (use_device)
         {
           std::cerr << "[Segmentation] Using GPU..." << std::endl;
-          std::function<void (const openni_wrapper::Image::Ptr& image, const openni_wrapper::DepthImage::Ptr& depth_image, float)> f = std::bind (&Segmentation::cloud_cb<Device>, this, _1, _2, _3);
-          grabber.registerCallback (f);
+          boost::function<void (const boost::shared_ptr<openni_wrapper::Image>& image, const boost::shared_ptr<openni_wrapper::DepthImage>& depth_image, float)> f = boost::bind (&Segmentation::cloud_cb<Device>, this, _1, _2, _3);
+          c = grabber->registerCallback (f);
         }
         else
         {
 //          std::cerr << "[Segmentation] Using CPU..." << std::endl;
-//          std::function<void (const openni_wrapper::Image::Ptr& image, const openni_wrapper::DepthImage::Ptr& depth_image, float)> f = std::bind (&Segmentation::cloud_cb<Host>, this, _1, _2, _3);
-//          grabber.registerCallback (f);
+//          boost::function<void (const boost::shared_ptr<openni_wrapper::Image>& image, const boost::shared_ptr<openni_wrapper::DepthImage>& depth_image, float)> f = boost::bind (&Segmentation::cloud_cb<Host>, this, _1, _2, _3);
+//          c = grabber->registerCallback (f);
         }
 
-        viewer.runOnVisualizationThread (std::bind(&Segmentation::viz_cb, this, _1), "viz_cb");
+        viewer.runOnVisualizationThread (boost::bind(&Segmentation::viz_cb, this, _1), "viz_cb");
 
-        grabber.start ();
+        grabber->start ();
         
         while (!viewer.wasStopped ())
         {
           pcl_sleep (1);
         }
 
-        grabber.stop ();
+        grabber->stop ();
       }
     }
 
     pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr normal_cloud;
     DisparityToCloud d2c;
     pcl::visualization::CloudViewer viewer;
-    std::mutex m_mutex;
+    boost::mutex m_mutex;
     bool new_cloud, go_on;
 };
 

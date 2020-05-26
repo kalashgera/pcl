@@ -32,12 +32,13 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  */
+#ifndef PCL_CUDA_PCL_CUDA_BASE_H_
+#define PCL_CUDA_PCL_CUDA_BASE_H_
 
-#pragma once
-
-#include <pcl/memory.h>
+#include <boost/shared_ptr.hpp>
 #include <pcl/cuda/point_cloud.h>
 
+#include <pcl/pcl_exports.h>
 
 namespace pcl
 {
@@ -46,16 +47,24 @@ namespace cuda
   ///////////////////////////////////////////////////////////////////////////////////////////
   /** \brief PCL base class. Implements methods that are used by all PCL objects. 
     */
-  template <typename CloudT>
+  template <template <typename> class Storage>
   class PCLCUDABase
   {
     public:
-      using PointCloud = CloudT;
-      using PointCloudPtr = typename PointCloud::Ptr;
-      using PointCloudConstPtr = typename PointCloud::ConstPtr;
+      typedef PointCloudAOS<Storage> PointCloud;
+      typedef typename PointCloud::Ptr PointCloudPtr;
+      typedef typename PointCloud::ConstPtr PointCloudConstPtr;
+
+      typedef boost::shared_ptr <typename Storage<int>::type> IndicesPtr;
 
       /** \brief Empty constructor. */
-      PCLCUDABase () : input_() {};
+      PCLCUDABase () : 
+        input_(),
+        x_idx_ (-1),
+        y_idx_ (-1),
+        z_idx_ (-1)
+      {
+      }
 
       /** \brief Provide a pointer to the input dataset
         * \param cloud the const boost shared pointer to a PointCloud message
@@ -64,6 +73,13 @@ namespace cuda
       setInputCloud (const PointCloudConstPtr &cloud) 
       { 
         input_ = cloud; 
+
+        int s = cloud->points.size ();
+
+        if (s > 0) 
+        {
+          x_idx_ = y_idx_ = z_idx_ = s - 1;
+        }
       }
 
       /** \brief Get a pointer to the input host point cloud dataset. */
@@ -75,7 +91,11 @@ namespace cuda
 
     protected:
       /** \brief The input point cloud dataset. */
+      //PointCloudConstPtr input_;
       PointCloudConstPtr input_;
+
+      IndicesPtr indices_;
+      int x_idx_, y_idx_, z_idx_;
 
       /** \brief This method should get called before starting the actual computation. */
       bool
@@ -96,3 +116,5 @@ namespace cuda
   };
 } // namespace
 } // namespace
+
+#endif  //#ifndef PCL_PCL_BASE_H_

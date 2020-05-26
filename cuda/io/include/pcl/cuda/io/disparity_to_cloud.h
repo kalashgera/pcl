@@ -35,7 +35,8 @@
  *
  */
 
-#pragma once
+#ifndef PCL_CUDA_DISPARITY_TO_CLOUD_H_
+#define PCL_CUDA_DISPARITY_TO_CLOUD_H_
 
 #include <pcl/cuda/point_cloud.h>
 #include <pcl/cuda/io/cloud_to_pcl.h>
@@ -44,7 +45,7 @@
 //#include <pcl/CameraInfo.h>
 //#include <pcl/PCLImage.h>
 
-#include <cstdint>
+#include <boost/cstdint.hpp>
 
 namespace pcl
 {
@@ -107,14 +108,14 @@ namespace cuda
 
       // compute using OpenNI images, Device output
       template <template <typename> class Storage> void
-      compute (const openni_wrapper::DepthImage::Ptr& depth_image,
-               const openni_wrapper::Image::Ptr& image,
+      compute (const boost::shared_ptr<openni_wrapper::DepthImage>& depth_image,
+               const boost::shared_ptr<openni_wrapper::Image>& image,
                float constant, 
                typename PointCloudAOS<Storage>::Ptr &output,
                bool downsample = false, int stride = 2, int smoothing_nr_iterations = 0, int smoothing_filter_size = 2);
 
       template <template <typename> class Storage> void
-      compute (const std::uint16_t* depth_image,
+      compute (const boost::uint16_t* depth_image,
                const OpenNIRGB* rgb_image,
                int width, int height,
                float constant,
@@ -123,8 +124,8 @@ namespace cuda
 
       // compute using OpenNI images, Host output
 /*      void
-      compute (const openni_wrapper::DepthImage::Ptr& depth_image,
-               const openni_wrapper::Image::Ptr& image,
+      compute (const boost::shared_ptr<openni_wrapper::DepthImage>& depth_image,
+               const boost::shared_ptr<openni_wrapper::Image>& image,
                float constant, 
                PointCloudAOS<Host>::Ptr &output);*/
       
@@ -140,15 +141,17 @@ namespace cuda
 //               PointCloudAOS<Host>::Ptr &output);
 
       void
-      compute (const openni_wrapper::DepthImage::Ptr& depth_image,
+      compute (const boost::shared_ptr<openni_wrapper::DepthImage>& depth_image,
                 float constant,
                 PointCloudAOS<Device>::Ptr &output);
 
       void
-      compute (const openni_wrapper::DepthImage::Ptr& depth_image,
+      compute (const boost::shared_ptr<openni_wrapper::DepthImage>& depth_image,
                 float constant,
                 PointCloudAOS<Host>::Ptr &output);
   };
 
 } // namespace
 } // namespace
+
+#endif  //#ifndef PCL_CUDA_DISPARITY_TO_CLOUD_H_

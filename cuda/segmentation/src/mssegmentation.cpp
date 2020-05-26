@@ -159,10 +159,10 @@ void meanShiftSegmentation(const GpuMat& src, Mat& dst, int sp, int sr, int mins
         }
     }
 
-    std::vector<SegmLink> edges;
+    vector<SegmLink> edges;
     edges.reserve(g.numv);
 
-    // Prepare edges connecting different components
+    // Prepare edges connecting differnet components
     for (int v = 0; v < g.numv; ++v)
     {
         int c1 = comps.find(v);
@@ -174,11 +174,11 @@ void meanShiftSegmentation(const GpuMat& src, Mat& dst, int sp, int sr, int mins
         }
     }
 
-    // Sort all graph's edges connecting different components (in ascending order)
+    // Sort all graph's edges connecting differnet components (in asceding order)
     sort(edges.begin(), edges.end());
 
     // Exclude small components (starting from the nearest couple)
-    for (std::size_t i = 0; i < edges.size(); ++i)
+    for (size_t i = 0; i < edges.size(); ++i)
     {
         int c1 = comps.find(edges[i].from);
         int c2 = comps.find(edges[i].to);
@@ -188,7 +188,7 @@ void meanShiftSegmentation(const GpuMat& src, Mat& dst, int sp, int sr, int mins
 
     // Compute sum of the pixel's colors which are in the same segment
     Mat h_src = (Mat)src;
-    std::vector<Vec4i> sumcols(nrows * ncols, Vec4i(0, 0, 0, 0));
+    vector<Vec4i> sumcols(nrows * ncols, Vec4i(0, 0, 0, 0));
     for (int y = 0; y < nrows; ++y)
     {
         Vec4b* h_srcy = h_src.ptr<Vec4b>(y);

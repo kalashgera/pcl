@@ -33,7 +33,8 @@
  *
  */
 
-#pragma once
+#ifndef PCL_CUDA_FILTERS_PASSTHROUGH_H_
+#define PCL_CUDA_FILTERS_PASSTHROUGH_H_
 
 #include <pcl_cuda/filters/filter.h>
 #include <thrust/count.h>
@@ -87,9 +88,9 @@ namespace pcl_cuda
     public:
       using Filter<CloudT>::filter_name_;
 
-      using PointCloud = typename PCLCUDABase<CloudT>::PointCloud;
-      using PointCloudPtr = typename PointCloud::Ptr;
-      using PointCloudConstPtr = typename PointCloud::ConstPtr;
+      typedef typename PCLCUDABase<CloudT>::PointCloud PointCloud;
+      typedef typename PointCloud::Ptr PointCloudPtr;
+      typedef typename PointCloud::ConstPtr PointCloudConstPtr;
 
       /** \brief Empty constructor. */
       PassThrough ()
@@ -200,3 +201,5 @@ namespace pcl_cuda
       bool zip_;
   };
 }
+
+#endif  //#ifndef PCL_FILTERS_PASSTHROUGH_H_
